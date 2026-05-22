@@ -1,0 +1,6 @@
+dist/
+apt/
+public/
+*.deb
+*.buildinfo
+*.changes

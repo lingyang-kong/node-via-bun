@@ -1,0 +1,4 @@
+shims/corepack usr/bin
+shims/node usr/bin
+shims/npm usr/bin
+shims/npx usr/bin

@@ -1,0 +1,3 @@
+#!/bin/sh
+echo 'corepack is not provided by the Bun-backed node shim.' >&2
+exit 127
