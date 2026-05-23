@@ -1,0 +1,22 @@
+Package: nodejs
+Architecture: all
+Version: 1.0.0+via-bun1
+Priority: optional
+Section: utils
+Source: node-via-bun
+Maintainer: Lingyang Kong <lykong@utexas.edu>
+Installed-Size: 12
+Provides: nodejs-dev, nodejs-doc, nodejs-legacy, npm, npx
+Depends: bun
+Conflicts: nodejs-dev, nodejs-doc, nodejs-legacy, npm
+Replaces: nodejs-dev, nodejs-doc, nodejs-legacy, npm
+Filename: pool/main/n/nodejs/nodejs_1.0.0+via-bun1_all.deb
+Size: 1276
+MD5sum: 5fe4d904564bd0237035fd4be2be8d26
+SHA1: cc912e1611b8f239d9225508801c7b453fd9f278
+SHA256: 141faea349d295f1069412a5affd54e26f0bbec8c5a7f06a28a710346e407955
+SHA512: 01581fb1b6747a0f81cf12725fa9ed9577b46bddca23c86e45a44f839d214d04d9645eb9c434b83411d3ebfc3041dd66de0e622cd5d998d24f7416ec9a83e0c4
+Description: Node.js command shims backed by Bun
+ Provides node, npm, and npx commands that delegate to Bun.
+ This package is intended to replace the system nodejs package.
+

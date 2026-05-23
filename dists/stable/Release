@@ -1,0 +1,23 @@
+Architectures: amd64
+Codename: stable
+Components: main
+Date: Sat, 23 May 2026 02:42:10 +0000
+Label: node-via-bun
+Origin: node-via-bun
+Suite: stable
+MD5Sum:
+ 2e080eb1069099206ec8820ef6cce875              148 Release
+ 3ed9916074c138ced11052a86ac1fa7e              898 main/binary-amd64/Packages
+ d0c2be62cdf41dc1ace8611dc1454fab              562 main/binary-amd64/Packages.gz
+SHA1:
+ b0b97327abb18b4e15ded3d5f8a73c3fc1d99ed4              148 Release
+ e087d1fbf69e03f1639b258d536fbeb6c078101f              898 main/binary-amd64/Packages
+ 1256c96f09f6a0f2fc22bdd29d884f036f8f480c              562 main/binary-amd64/Packages.gz
+SHA256:
+ 56150d98f5021e4909caf2712b439410a474d38e7714f65bea783ea315869153              148 Release
+ ee109abdc89e46e66185e0eb16ce93a239165e673bbd56f0b46b1391577cf8a4              898 main/binary-amd64/Packages
+ 5ada282a1dacc459ea4333b42b9d0100ced39a4d5952b30882911246e1fc0fed              562 main/binary-amd64/Packages.gz
+SHA512:
+ 3c0d1a29a52482c36aad6bc5527bbfb68ad0a87cba2467794e8cfcddc0609647e7238af432feb1408f66aa22b55fe76d3fa486b277a901ee507a56b7f4f8245d              148 Release
+ 499e78046f605f0243a55041689978657d5d1c81878a771386ffb14339451a6abcd4cda234d00ba9f0df48fea750687c6f51e542c4916c4243a1612d103d11aa              898 main/binary-amd64/Packages
+ e729fdb489b69d78c44bb9936ee1206a09c15bff670f1bf863a918e2e5a509b1fd1449085b538d90b9d14a1daee52722928d727df6d1a0e4e053a6270b3c8621              562 main/binary-amd64/Packages.gz
