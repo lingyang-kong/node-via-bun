@@ -6,6 +6,7 @@ dpkg-buildpackage -us -uc -b
 install -d dist public/pool/main/n/nodejs
 mv ../nodejs_*_all.deb dist/
 cp dist/*.deb public/pool/main/n/nodejs/
+cp assets/node-via-bun.pref public/
 
 cd public
 

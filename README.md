@@ -43,14 +43,18 @@ curl -fsSL 'https://raw.githubusercontent.com/lingyang-kong/node-via-bun/gh-page
 
 echo 'deb [signed-by=/usr/share/keyrings/node-via-bun.gpg] https://raw.githubusercontent.com/lingyang-kong/node-via-bun/gh-pages stable main' \
   | sudo tee /etc/apt/sources.list.d/node-via-bun.list
+
+curl -fsSL 'https://raw.githubusercontent.com/lingyang-kong/node-via-bun/gh-pages/node-via-bun.pref' \
+  | sudo tee /etc/apt/preferences.d/node-via-bun.pref >/dev/null
 ```
 
 Install:
 
 ```sh
 sudo apt update
-sudo apt install 'nodejs=1.0.0+via-bun1'
+sudo apt install nodejs
 ```
 
-Use the explicit version form for the first replacement install if a
-higher-version NodeSource `nodejs` package is already installed locally.
+The preference file pins `+via-bun` versions of `nodejs` with priority 1001,
+so the Bun-backed shim remains the candidate even when other repositories offer
+higher-version `nodejs` packages.
