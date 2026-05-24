@@ -22,7 +22,7 @@ jobs:
               run: sudo apt-get update && sudo apt-get install -y apt-utils build-essential debhelper dpkg-dev
 
             - name: Build package and repository
-              run: scripts/build-release
+              run: scripts/build-release.sh
 
             - name: Upload release assets
               uses: softprops/action-gh-release@v2
