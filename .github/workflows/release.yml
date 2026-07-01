@@ -1,38 +1,119 @@
-name: Build and Publish
+name: Release
 
 on:
-    push:
-        tags:
-            - 'v*'
-    workflow_dispatch:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: Release version without leading v
+        required: true
 
 permissions:
-    contents: write
+  contents: write
+  id-token: write
+  pages: write
+
+env:
+  RELEASE_TAG: v${{ inputs.release_version }}
+  RELEASE_VERSION: ${{ inputs.release_version }}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
-    package:
-        runs-on: ubuntu-latest
+  validate_release:
+    name: Validate Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check release version format
+        run: |
+          case "$RELEASE_VERSION" in
+          v*)
+          	printf '%s\n' 'RELEASE_VERSION must not include the leading v' >&2
+          	exit 1
+          	;;
+          esac
+        background: true
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - parallel:
+          - name: Check release branch
+            run: |
+              if [ "$GITHUB_REF_NAME" != main ]; then
+              	echo "release workflow must be run from main, got $GITHUB_REF_NAME" >&2
+              	exit 1
+              fi
+
+          - name: Check release tag
+            run: |
+              if git rev-parse --quiet --verify "$RELEASE_TAG^{tag}" >/dev/null &&
+              	[ "$(git rev-list --max-count=1 "$RELEASE_TAG")" != "$(git rev-parse HEAD)" ]; then
+              	printf '%s\n' "$RELEASE_TAG already exists and does not point at HEAD" >&2
+              	exit 1
+              fi
+
+  create_github_release:
+    name: Create GitHub Release
+    needs: validate_release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create source tag
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          if ! git rev-parse --quiet --verify "$RELEASE_TAG^{tag}" >/dev/null; then
+          	git tag --annotate "$RELEASE_TAG" --message "$RELEASE_TAG"
+          fi
+
+      - name: Push source tag
+        run: git push origin "$RELEASE_TAG"
+
+      - name: Create draft release
         env:
-            APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+          	gh release create "$RELEASE_TAG" --verify-tag --title "$RELEASE_TAG" --draft
+          fi
 
-        steps:
-            - uses: actions/checkout@v4
+  publish_apt_repository:
+    name: Publish APT Repository
+    needs: create_github_release
+    uses: ./.github/workflows/publish-apt-repository.yml
+    with:
+      release_version: ${{ inputs.release_version }}
+    secrets:
+      APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
 
-            - name: Install package tools
-              run: sudo apt-get update && sudo apt-get install -y apt-utils build-essential debhelper dpkg-dev
+  publish_homebrew_tap:
+    name: Publish Homebrew Tap
+    needs: create_github_release
+    uses: ./.github/workflows/publish-homebrew-tap.yml
+    with:
+      release_version: ${{ inputs.release_version }}
+    secrets:
+      HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
 
-            - name: Build package and repository
-              run: scripts/build-release.sh
+  publish_github_release:
+    name: Publish GitHub Release
+    needs:
+      - publish_apt_repository
+      - publish_homebrew_tap
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
 
-            - name: Upload release assets
-              uses: softprops/action-gh-release@v2
-              if: startsWith(github.ref, 'refs/tags/')
-              with:
-                  files: dist/*.deb
-
-            - name: Publish APT repository
-              uses: peaceiris/actions-gh-pages@v4
-              with:
-                  github_token: ${{ secrets.GITHUB_TOKEN }}
-                  publish_branch: gh-pages
-                  publish_dir: public
+    steps:
+      - name: Publish GitHub release
+        run: gh release edit "$RELEASE_TAG" --draft=false

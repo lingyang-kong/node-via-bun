@@ -1,3 +1,0 @@
-Package: nodejs
-Pin: version /.*\+via-bun.*/
-Pin-Priority: 1001

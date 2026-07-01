@@ -1,0 +1,133 @@
+name: Publish APT Repository
+
+on:
+  workflow_call:
+    inputs:
+      release_version:
+        description: Release version without leading v
+        required: true
+        type: string
+    secrets:
+      APT_GPG_PRIVATE_KEY:
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+  pages: write
+
+env:
+  APT_DIR: apt/
+  APT_DISTRIBUTION_DIR: upstream/public/dists/stable/
+  APT_POOL_DIR: upstream/public/pool/main/n/nodejs/
+  APT_REPOSITORY_DIR: upstream/public
+  UPSTREAM_DIR: upstream/
+
+jobs:
+  publish_apt_repository:
+    name: Publish APT Repository
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Install APT build tools
+        id: install_apt_build_tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes apt-utils build-essential debhelper git-buildpackage
+        background: true
+
+      - name: Detect APT architecture
+        id: detect_apt_architecture
+        run: printf 'APT_ARCHITECTURE=%s\n' "$(dpkg --print-architecture)" >>"$GITHUB_ENV"
+        background: true
+
+      - uses: actions/configure-pages@v5
+        background: true
+
+      - parallel:
+          - name: Check out upstream source
+            uses: actions/checkout@v4
+            with:
+              path: ${{ env.UPSTREAM_DIR }}
+              fetch-depth: 0
+
+          - name: Check out APT packaging
+            uses: actions/checkout@v4
+            with:
+              repository: lingyang-kong/apt-node-via-bun
+              path: ${{ env.APT_DIR }}
+
+      - name: Add Debian packaging files
+        run: cp --archive --link "$APT_DIR/debian" "$UPSTREAM_DIR/debian"
+
+      - wait: install_apt_build_tools
+
+      - name: Generate Debian changelog
+        working-directory: ${{ env.UPSTREAM_DIR }}
+        env:
+          RELEASE_VERSION: ${{ inputs.release_version }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          gbp dch \
+          	--git-author \
+          	--ignore-branch \
+          	--new-version="$RELEASE_VERSION" \
+          	--distribution=stable \
+          	--force-distribution \
+          	--id-length=7 \
+          	--spawn-editor=never
+
+      - name: Build Debian package
+        working-directory: ${{ env.UPSTREAM_DIR }}
+        run: dpkg-buildpackage --unsigned-source --unsigned-changes --build=binary
+
+      - name: Stage Debian package
+        env:
+          APT_PREFERENCES: ${{ env.APT_DIR }}/node-via-bun.pref
+        run: |
+          rm --recursive --force "$APT_REPOSITORY_DIR"
+          install --directory "$APT_POOL_DIR"
+
+          ln nodejs_*.deb "$APT_POOL_DIR/"
+          ln "$APT_PREFERENCES" "$APT_REPOSITORY_DIR"
+
+      - wait: detect_apt_architecture
+
+      - name: Generate APT repository metadata
+        env:
+          APT_BINARY_DIR: ${{ env.APT_DISTRIBUTION_DIR }}/main/binary-${{ env.APT_ARCHITECTURE }}/
+          APT_RELEASE_CONFIG: ${{ env.APT_DIR }}/apt-ftparchive-release.conf
+        run: |
+          install --directory "$APT_BINARY_DIR"
+          apt-ftparchive packages "$APT_POOL_DIR" /dev/null "${APT_POOL_DIR#"$APT_REPOSITORY_DIR"/}" >"$APT_BINARY_DIR/Packages"
+          gzip --best --force --keep "$APT_BINARY_DIR/Packages"
+
+          apt-ftparchive \
+          	--config-file "$APT_RELEASE_CONFIG" \
+          	--option "APT::FTPArchive::Release::Architectures=$APT_ARCHITECTURE" \
+          	release "$APT_DISTRIBUTION_DIR" >"$APT_DISTRIBUTION_DIR/Release"
+
+      - name: Sign APT repository
+        env:
+          APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
+          GNUPGHOME_DIR: ${{ runner.temp }}/apt-gnupg/
+        run: |
+          install --directory --mode=0700 "$GNUPGHOME_DIR"
+          printf '%s' "$APT_GPG_PRIVATE_KEY" | gpg --batch --import
+          gpg --batch --yes --armor --export >"$APT_REPOSITORY_DIR/key.gpg"
+          gpg --batch --yes --clearsign \
+          	--output "$APT_DISTRIBUTION_DIR/InRelease" \
+          	"$APT_DISTRIBUTION_DIR/Release"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ env.APT_REPOSITORY_DIR }}
+
+      - wait-all:
+
+      - uses: actions/deploy-pages@v4

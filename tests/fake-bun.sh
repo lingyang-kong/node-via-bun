@@ -2,7 +2,7 @@
 set -eu
 
 npm_version_path="${NODE_VIA_BUN_TEST_NPM_VERSION_PATH:?NODE_VIA_BUN_TEST_NPM_VERSION_PATH must be set}"
-script_dir="$(CDPATH= cd "$(dirname "$0")" && pwd)"
+script_dir="$(CDPATH='' cd "$(dirname "$0")" && pwd)"
 
 case "${1:-}" in
 --print)
@@ -17,4 +17,4 @@ case "${1:-}" in
 	;;
 esac
 
-"${script_dir}/test-print-command.sh" bun "$@"
+"$script_dir/print-command.sh" bun "$@"

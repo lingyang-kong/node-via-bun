@@ -4,8 +4,8 @@ set -eu
 label="$1"
 shift
 
-printf '%s' "${label}"
+printf '%s' "$label"
 for arg in "$@"; do
-	printf ' %s' "${arg}"
+	printf ' %s' "$arg"
 done
 printf '\n'

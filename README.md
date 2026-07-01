@@ -55,13 +55,13 @@ provide `nodejs-dev` or `nodejs-doc`.
 
 ```sh
 curl --fail --silent --show-error --location 'https://lingyang-kong.github.io/node-via-bun/key.gpg' \
-  | sudo gpg --dearmor --output /usr/share/keyrings/node-via-bun.gpg
+	| sudo gpg --dearmor --output /usr/share/keyrings/node-via-bun.gpg
 
 echo 'deb [signed-by=/usr/share/keyrings/node-via-bun.gpg] https://lingyang-kong.github.io/node-via-bun stable main' \
-  | sudo tee /etc/apt/sources.list.d/node-via-bun.list
+	| sudo tee /etc/apt/sources.list.d/node-via-bun.list
 
 curl --fail --silent --show-error --location 'https://lingyang-kong.github.io/node-via-bun/node-via-bun.pref' \
-  | sudo tee /etc/apt/preferences.d/node-via-bun.pref >/dev/null
+	| sudo tee /etc/apt/preferences.d/node-via-bun.pref >/dev/null
 ```
 
 Install:
@@ -83,3 +83,7 @@ Tap the Homebrew repository and install `node`:
 brew tap lingyang-kong/node-via-bun
 brew install lingyang-kong/node-via-bun/node
 ```
+
+## License
+
+MIT. See [LICENSE](LICENSE).

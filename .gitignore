@@ -2,14 +2,9 @@
 *.log
 *.tmp
 
-# Package and repository build output
-build/
+# Release output
 dist/
-apt/
 public/
-*.deb
-*.buildinfo
-*.changes
 
 # Local shim builds
 node
