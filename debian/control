@@ -7,11 +7,11 @@ Standards-Version: 4.6.0
 Rules-Requires-Root: no
 
 Package: nodejs
-Architecture: all
-Depends: bun
-Provides: npm, npx, nodejs-dev, nodejs-doc, nodejs-legacy
-Conflicts: npm, nodejs-dev, nodejs-doc, nodejs-legacy
-Replaces: npm, nodejs-dev, nodejs-doc, nodejs-legacy
+Architecture: any
+Depends: bun, ${misc:Depends}, ${shlibs:Depends}
+Provides: npm, npx, nodejs-legacy
+Conflicts: npm, npx, nodejs-legacy
+Replaces: npm, npx, nodejs-legacy
 Description: Node.js command shims backed by Bun
- Provides node, npm, and npx commands that delegate to Bun.
+ Provides node, nodejs, npm, and npx commands that delegate to Bun.
  This package is intended to replace the system nodejs package.

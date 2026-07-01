@@ -1,4 +1,38 @@
 #!/usr/bin/make -f
 
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+include /usr/share/dpkg/buildflags.mk
+
+COMMON_CFLAGS := $(shell sed '/^[[:space:]]*$$/d' src/cflags.txt)
+DEB_USR := debian/nodejs/usr
+DEB_BIN := $(DEB_USR)/bin
+DEB_LIBEXEC := $(DEB_USR)/lib/node-via-bun
+DEB_SHARE := $(DEB_USR)/share/node-via-bun
+DEBIAN_CFLAGS := -ffunction-sections -fdata-sections
+DEBIAN_LDFLAGS := -Wl,--gc-sections
+
 %:
 	dh $@
+
+override_dh_auto_build:
+	install --directory build
+	$(CC) $(COMMON_CFLAGS) \
+		$(CPPFLAGS) $(CFLAGS) $(DEBIAN_CFLAGS) \
+		-DBUN_PATH='"/usr/bin/bun"' \
+		-DBUNX_PATH='"/usr/bin/bunx"' \
+		-DNPM_VERSION_PATH='"/usr/share/node-via-bun/npm-version.js"' \
+		src/node-via-bun.c -o build/node-via-bun \
+		$(LDFLAGS) $(DEBIAN_LDFLAGS)
+
+override_dh_auto_test:
+	scripts/test-multicall-dispatch.sh
+
+override_dh_auto_install:
+	install --directory $(DEB_BIN) $(DEB_LIBEXEC) $(DEB_SHARE)
+	install --mode=0755 build/node-via-bun $(DEB_LIBEXEC)/node-via-bun
+	install --mode=0644 src/npm-version.js $(DEB_SHARE)/npm-version.js
+	for name in node nodejs npm npx; do \
+		ln $(DEB_LIBEXEC)/node-via-bun "$(DEB_BIN)/$${name}"; \
+	done
+
+# vim: set filetype=make:
