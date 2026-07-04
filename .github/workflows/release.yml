@@ -8,9 +8,7 @@ on:
         required: true
 
 permissions:
-  contents: write
-  id-token: write
-  pages: write
+  contents: read
 
 env:
   RELEASE_TAG: v${{ inputs.release_version }}
@@ -23,7 +21,7 @@ concurrency:
 jobs:
   validate_release:
     name: Validate Release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
 
     steps:
       - name: Check release version format
@@ -56,9 +54,11 @@ jobs:
               	exit 1
               fi
 
-  create_github_release:
-    name: Create GitHub Release
+  create_source_tag:
+    name: Create Source Tag
     needs: validate_release
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
 
     steps:
@@ -67,10 +67,10 @@ jobs:
           fetch-depth: 0
 
       - name: Create source tag
+        env:
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
         run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-
           if ! git rev-parse --quiet --verify "$RELEASE_TAG^{tag}" >/dev/null; then
           	git tag --annotate "$RELEASE_TAG" --message "$RELEASE_TAG"
           fi
@@ -78,18 +78,14 @@ jobs:
       - name: Push source tag
         run: git push origin "$RELEASE_TAG"
 
-      - name: Create draft release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-          	gh release create "$RELEASE_TAG" --verify-tag --title "$RELEASE_TAG" --draft
-          fi
-
   publish_apt_repository:
     name: Publish APT Repository
-    needs: create_github_release
-    uses: ./.github/workflows/publish-apt-repository.yml
+    needs: create_source_tag
+    permissions:
+      contents: read
+      id-token: write
+      pages: write
+    uses: lingyang-kong/apt-node-via-bun/.github/workflows/publish-apt-repository.yml@main
     with:
       release_version: ${{ inputs.release_version }}
     secrets:
@@ -97,23 +93,11 @@ jobs:
 
   publish_homebrew_tap:
     name: Publish Homebrew Tap
-    needs: create_github_release
-    uses: ./.github/workflows/publish-homebrew-tap.yml
+    needs: create_source_tag
+    permissions:
+      contents: read
+    uses: lingyang-kong/homebrew-node-via-bun/.github/workflows/publish-homebrew-tap.yml@main
     with:
       release_version: ${{ inputs.release_version }}
     secrets:
       HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-
-  publish_github_release:
-    name: Publish GitHub Release
-    needs:
-      - publish_apt_repository
-      - publish_homebrew_tap
-    runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      GH_REPO: ${{ github.repository }}
-
-    steps:
-      - name: Publish GitHub release
-        run: gh release edit "$RELEASE_TAG" --draft=false
